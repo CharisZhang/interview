@@ -2,9 +2,10 @@
 
 (async () => {
     const query = require('./app/db')
-    res = await query(`
+        res = await query(`
         CREATE DATABASE IF NOT EXISTS test
     `)
+    
 
     console.log('mysql create database:', res)
 

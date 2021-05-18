@@ -9,6 +9,11 @@ const router = require('koa-router')();
 const views = require('koa-views');
 const query = require('./db')
 const encryptPassword = require('./password')
+
+
+const xss = require('xss')
+let html = xss(`<h1>XSS</h1><script>alert('xss')</script>`)
+console.log('html:'+html);
 app.keys = ['some secret hurr'];
 const CONFIG = {
     key: 'kaikeba:sess',
@@ -42,7 +47,7 @@ app.use(async (ctx, next) => {
     await next()
     // 参数出现在HTML内容或属性浏览器会拦截
     ctx.set('X-XSS-Protection', 0)
-    // ctx.set('Content-Security-Policy', "default-src 'self'")
+    // ctx.set('Content-Security-Policy', "script-src 'self'")
     // ctx.set('X-FRAME-OPTIONS', 'DENY')
     // const referer = ctx.request.header.referer
     // console.log('Referer:', referer)
@@ -54,15 +59,16 @@ app.use(async (ctx, next) => {
 // const helmet = require('koa-helmet')
 // app.use(helmet())
 
-
+ 
 router.get('/', async (ctx) => {
-    // res = await query('select * from test.text')
+    res = await query('select * from test.text')
     // ctx.set('X-FRAME-OPTIONS', 'DENY')
     await ctx.render('index', {
-        from: ctx.query.from,
+        // from: ctx.query.from,
+        from: html,
         username: ctx.session.username,
-        // text: res[0].text,
-        text: 'abc'
+        text: res[0].text,
+        // text: 'abc'
     });
 });
 
@@ -88,7 +94,7 @@ router.post('/login', async (ctx) => {
     //     ctx.redirect('/?from=china')
     //     ctx.session.username = ctx.request.body.username
     // }
-
+    console.log(res);
     if (res.length !== 0 && res[0].salt === null) {
         // 密码未加密
         console.log('no salt ...')
@@ -108,6 +114,7 @@ router.post('/login', async (ctx) => {
         console.log('has salt')
         if (encryptPassword(res[0].salt, password) === res[0].password) {
             ctx.session.usename = ctx.request.body.usename
+            console.log(ctx.request.body.usename);
             ctx.redirect('/?from=china')
         }
     }
@@ -115,7 +122,7 @@ router.post('/login', async (ctx) => {
 });
 
 router.post('/updateText', async (ctx) => {
-    text = ctx.request.body.text
+    text = xss(ctx.request.body.text)
     // console.log(text , escape(text))
     // text = escape(text)
     res = await query(`REPLACE INTO test.text (id,text) VALUES(1,'${text}');`)
