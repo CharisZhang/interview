@@ -29,13 +29,62 @@ class Father {
   }
 }
 let fat = new Father()
-// func.a()
-// fat.a()
+func.a()
+fat.a()
 console.log(Func.prototype);
 console.log(Father.prototype);
-// console.log(fat.__proto__ === Father.prototype);
+console.log(fat.__proto__ === Father.prototype);
 
-// console.log(fun.__proto__);
-// let funchild = new fun()
-// console.log(funchild.__proto__ === fun.prototype);
-// console.log(Object.prototype.__proto__);
+console.log(fun.__proto__);
+let funchild = new fun()
+console.log(funchild.__proto__ === fun.prototype);
+console.log(Object.prototype.__proto__);
+
+
+// function _new(fun) {
+//   return function() {
+//     let obj = {
+//       __proto__: fun.prototype
+//     }
+//     fun.apply(obj,arguments)
+//     return obj
+//   }
+// }
+// function Person(name,age) {
+//   this.name = name 
+//   this.age = age
+// }
+// let a = {
+
+// }
+
+function _new(fun) {
+  return function() {
+    let obj = {
+      __proto__:fun.prototype
+    }
+    fun.apply(obj,arguments)
+    return obj
+  }
+}
+function Parent(a,b) {
+  this.a = a
+  this.b = b
+}
+let child = _new(Parent)(1,2)
+let child2 = _new(Parent)(3,4)
+
+console.log(child);
+console.log(child2);
+// console.log(child.__proto__ === Parent.prototype);
+
+
+function _new(fun) {
+  return function() {
+    let obj = {
+      __proto__:fun.prototype
+    }
+    fun.apply(obj.arguments)
+    return obj
+  }
+}

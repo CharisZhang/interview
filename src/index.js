@@ -36,7 +36,24 @@
 // }
 
 // console.log(longestPalindrome('abcba'))
-var isValid = function(s) {
-  if(s.length%2 === 1) return false
-};
-console.log(isValid('{[()]}'));
+// var isValid = function(s) {
+//   if(s.length%2 === 1) return false
+//   let arr = []
+  
+// };
+// console.log(isValid('{[()]}'));
+
+
+
+
+var a = []
+function sum(num) {
+  // num = [2]
+  // num.push(2)
+  setTimeout(() => {
+    num.push(2)
+    console.log(a);
+  });
+}
+sum(a)
+console.log(a);
