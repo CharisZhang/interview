@@ -2,73 +2,65 @@
 // /**
 //  * 手写继承 ES5 ES6
 //  */
-// // class Father {
-// //   constructor(){
-// //     this.a = 'a'
-// //     console.log('father');
-// //   }
-// // }
-// // class Child extends Father{
-// //   constructor(){
-// //     super()
-// //     this.b = 'b'
-// //     console.log('child');
-// //   }
-// // }
-// // let child = new Child()
-// // console.log(child);
-
-
-// // function Parent(){
-// //   this.name = ['aaa']
-// // }
-// // Parent.prototype.getName = function(){
-// //   return this.name
-// // }
-// // function Child(){
-// //   // 在子类的构造函数中执行父类的构造函数，并且为其绑定子类的this
-// //   Parent.call(this)
-// // }
-// // // 让子类的原型对象指向父类的实例，找不到时候沿着原型链往上找
-// // Child.prototype = new Parent()
-// // Child.prototype.constructor = Child
-// // let child1 = new Child()
-// // child1.name[0] = 'bbb'
-// // let child2 = new Child()
-// // console.log(child1)
-// // console.log(child2)
-// // console.log(child2.getName())
-
-
-
-
-// function Father() {
-//   this.name = 'test'
-// }
-// Father.prototype.getName = function() {
-//   return this.name
-// }
-// function Child() {
-//   // Father.apply(this,arguments)
-// }
-// function Child2() {
-//   // Father.apply(this,arguments)
-// }
-// Child.prototype = new Father()
-// Child2.prototype = new Father()
-// Child.prototype.constructor = Child
-// Child2.prototype.constructor = Child2
-// let child = new Child()
-// let child2 = new Child2()
-// child.name = 'test2'
-// console.log(child2.getName());
-// // let child2 = new Child()
-// // console.log(child1 === child2);
-// // console.log(child2.getName());
-
-console.log('a:'+a);
-console.log('b:'+b);
-if(true){
-  var a = 2
-  let b = 1
+//  ES6
+class Parent{
+  constructor(){
+    this.name = 'parent'
+    this.names = ['name1','name2']
+  }
 }
+class Child extends Parent{
+  constructor(){
+    super()
+  }
+}
+let child = new Child()
+let _child = new Child()
+// console.log(Child.prototype.__proto__ === Parent.prototype);
+// console.log(child.__proto__ === Child.prototype);
+child.names.push('name3')
+// console.log(_child.names);
+/**
+ * ES5
+ */
+// 原型链继承
+function Parent2() {
+  console.log('p2');
+  this.name = 'p2'
+  this.names = ['a','b']
+}
+Parent2.prototype.getNames = function() {
+  return this.names
+}
+function Child2() {
+}
+Child2.prototype = new Parent2()
+let child2 = new Child2()
+// 构造函数继承
+function Parent3() {
+  console.log('p2');
+  this.name = 'p2'
+  this.names = ['a','b']
+}
+function Child3() {
+  Parent3.apply(this,arguments)
+}
+// 组合继承
+function Parent4() {}
+function Child4() {
+  Parent4.apply(this,arguments)
+}
+Child4.prototype = new Parent4()
+// 原型式继承
+function createObj(o) {
+  function F() {}
+  F.prototype = o
+  return new F()
+}
+let Parent5 = {
+  name: 'p5',
+  names: ['a','b','c']
+}
+
+let person1 = createObj(Parent5)
+console.log(person1.names);
