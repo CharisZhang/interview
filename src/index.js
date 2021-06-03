@@ -1,14 +1,30 @@
-function calc(num) {
-  if(num === 0 || num === 1 || num === 2){
-    return [num]
-  }
-  for (let i = 2; i < num; i++) {
-    if(num%i === 0){
-      return i
-    }
-  }
+function fn(a,b) {
+  var a = 2
+  // function a() {
+  //   return 2
+  // }
+  console.log(a);
 }
-console.log(calc(13));
+fn(3,4)
+
+
+// function calc(num) {
+//   let arr = []
+//   if(num === 0 || num === 1 || num === 2){
+//     arr.push(num)
+//     return arr
+//   }
+//   for (let i = 2; i < num; i++) {
+//     if(num%i === 0){
+//       arr.push(i)
+//     }
+//   }
+//   if(arr.length === 0){
+//     arr = [num]
+//   }
+//   return arr
+// }
+// console.log(calc(13));
 
 
 
