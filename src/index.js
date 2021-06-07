@@ -11,7 +11,6 @@ function prototype(child, parent) {
   child.prototype = prototype
 }
 
-
 function Parent() {
   this.name = 'parent'
   this.arr = [1,2,3]
