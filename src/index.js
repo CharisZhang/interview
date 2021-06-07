@@ -1,12 +1,12 @@
-function fn(a,b) {
-  var a = 2
-  // function a() {
-  //   return 2
-  // }
-  console.log(a);
-}
-fn(3,4)
-
+setTimeout(() => {
+  console.log('outter-2000');
+}, 2000);
+setTimeout(() => {
+  console.log('outter-1000');
+  setTimeout(() => {
+    console.log('inner');
+  }, 500);
+}, 1000);
 
 // function calc(num) {
 //   let arr = []
