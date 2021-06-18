@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "@vue/cli-plugin-vuex": "^4.5.13",
+    "webpack-dev-server": "^3.11.2"
+  },
+  "dependencies": {
+    "vuex": "^4.0.1"
+  }
+}
