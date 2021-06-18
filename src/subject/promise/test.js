@@ -1,10 +1,10 @@
 /**
  * 测试手写Promise
  */
-// const Promise = require('./promise')
-import { Promise } from './promise.js'
+const _Promise = require('./promise')
+// import { Promise } from './promise.js'
 console.log(1);
-new Promise((resolve, reject) => {
+new _Promise((resolve, reject) => {
     throw new Error('error')
     console.log(2);
     resolve(1)
