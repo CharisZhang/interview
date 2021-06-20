@@ -16,3 +16,11 @@
   - actions 异步操作/复杂业务逻辑
   - store 包含以上概念的容器
 - 抽取出来vue模块, 设置namespace命名空间, 使用的时候dispatch('namespace/xxx')
+
+### 实现vuex
+#### 任务分析 
+- 实现Store类
+  - state响应化处理方案
+  - 保存状态, 实现dispatch, commit, getters
+- 实现插件
+  - 挂载store实例
