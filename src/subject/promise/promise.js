@@ -15,28 +15,28 @@
 
 class _Promise {
   constructor(executor) {
-    console.log('1.promise.constructor');
+    console.log('1.promise.constructor')
     this.state = 'pending' // 三种状态 pending, fulfilled, rejected
     this.value = null // 成功的值
     this.reason = null // 失败的原因
     // 成功/失败回调函数存放的数组
     this.onResolvedCallbacks = []
     this.onRejectedCallbacks = []
-    let resolve = value => {
-      console.log('3.promise.constructor.resolve');
+    let resolve = (value) => {
+      console.log('3.promise.constructor.resolve')
       if (this.state === 'pending') {
         this.state = 'fulfilled'
         this.value = value
-        this.onResolvedCallbacks.forEach(fn => fn())
+        this.onResolvedCallbacks.forEach((fn) => fn())
       }
     }
-    let reject = reason => {
+    let reject = (reason) => {
       // console.log('3.promise.constructor.reject',reason);
       if (this.state === 'pending') {
         this.state = 'reject'
         this.reason = reason
-        console.error('opts');
-        this.onRejectedCallbacks.forEach(fn => fn())
+        console.error('opts')
+        this.onRejectedCallbacks.forEach((fn) => fn())
       }
     }
     try {
@@ -51,7 +51,7 @@ class _Promise {
     onFulfilled,onRejected如果他们是函数，则必须分别在fulfilled，rejected后被调用，value或reason依次作为他们的第一个参数
   */
   then(onFulfilled, onRejected) {
-    console.log('4.promise.then');
+    console.log('4.promise.then')
     /* 4. new Promise().then().then() 链式调用
       then里面返回一个新的promise
       将这个promise2返回的值传递到下一个then中
@@ -65,44 +65,42 @@ class _Promise {
       resolve和reject是promise2的
     */
     const promise2 = new _Promise((resolve, reject) => {
-      
-        if (this.state === 'fulfilled') {
-          setTimeout(() => {
-            let x = onFulfilled(this.value)
+      if (this.state === 'fulfilled') {
+        setTimeout(() => {
+          let x = onFulfilled(this.value)
           resolvePromise(promise2, x, resolve, reject)
-          }, 0);
-        }
-        if (this.state === 'rejected') {
-          setTimeout(() => {
-            let x = onRejected(this.reason)
+        }, 0)
+      }
+      if (this.state === 'rejected') {
+        setTimeout(() => {
+          let x = onRejected(this.reason)
           resolvePromise(promise2, x, resolve, reject)
-          }, 0);
-        }
-        /* 3. 异步实现
+        }, 0)
+      }
+      /* 3. 异步实现
           但是当resolve在setTomeout内执行，then时state还是pending等待状态
           我们就需要在then调用的时候，将成功和失败存到各自的数组，一旦reject或者resolve，就调用它们
           类似于发布订阅，先将then里面的两个函数储存起来，由于一个promise可以有多个then，所以存在同一个数组内。
         */
-        if (this.state === 'pending') {
-          this.onResolvedCallbacks.push(() => {
-            setTimeout(() => {
-              let x = onFulfilled(this.value)
+      if (this.state === 'pending') {
+        this.onResolvedCallbacks.push(() => {
+          setTimeout(() => {
+            let x = onFulfilled(this.value)
             resolvePromise(promise2, x, resolve, reject)
-            }, 0);
-          })
-          this.onRejectedCallbacks.push(() => {
-            setTimeout(() => {
-              let x = onRejected(this.reason)
+          }, 0)
+        })
+        this.onRejectedCallbacks.push(() => {
+          setTimeout(() => {
+            let x = onRejected(this.reason)
             resolvePromise(promise2, x, resolve, reject)
-            }, 0);
-          })
-        }
-        
+          }, 0)
+        })
+      }
     })
     return promise2
   }
-  catch(fn){
-    return this.then(null,fn)
+  catch(fn) {
+    return this.then(null, fn)
   }
 }
 /* 5. resolvePromise 让不同的promise代码互相套用
@@ -128,71 +126,78 @@ function resolvePromise(promise2, x, resolve, reject) {
   if (x !== null && (typeof x === 'object' || typeof x === 'function')) {
     try {
       //  A+规定,声明then = x的then方法
-      let then = x.then;
+      let then = x.then
       // 如果then是函数, 就默认是promise了
       if (typeof then === 'function') {
-        then.call(x, y => {
-          // 成功和失败只能调用一个
-          if (called) return
-          called = true
-          // resolve的结果依旧是promise 那就继续解析
-          resolvePromise(promise2, y, resolve, reject)
-        }, err => {
-          if (called) return
-          called = true
-          reject(err)
-        })
+        then.call(
+          x,
+          (y) => {
+            // 成功和失败只能调用一个
+            if (called) return
+            called = true
+            // resolve的结果依旧是promise 那就继续解析
+            resolvePromise(promise2, y, resolve, reject)
+          },
+          (err) => {
+            if (called) return
+            called = true
+            reject(err)
+          }
+        )
       }
     } catch (e) {
       if (called) return
       called = true
       reject(e)
     }
-  }else{
+  } else {
     resolve(x)
   }
 }
 
-
-
-
-// let _promise = new _Promise((resolve, reject) => {
-//   console.warn('2');
-//   setTimeout(() => {
-//     resolve('succeed')
-//   }, 500);
-// }).then((value) => {
-//   console.warn('97.fulfilled', value);
-//   // return 'return 1'
-//   return new Promise((resolve) => {
-//     setTimeout(() => {
-//       resolve('promisexxx')
-//     }, 100);
-//   })
-// }, (reason) => {
-//   console.warn('97.rejected', reason);
-// }).then(value => {
-//   console.warn('98.fulfilled.1', value);
-//   return 'return 2'
-// }).then(value => {
-//   console.warn('98.fulfilled.2', value);
-//   return 'return 3'
-// }).then(value => {
-//   console.warn('98.fulfilled.3', value);
-//   return 'return 4'
-// })
-let p = new _Promise((resolve,reject) => {
-    // resolve(0);
+let _promise = new _Promise((resolve, reject) => {
+  console.warn('2');
   setTimeout(() => {
-    resolve(0);
+    resolve('succeed')
   }, 500);
-},reason => {
-  console.error('reject1',reason);
-});
-var p2 = p.then(data => {
-  // 循环引用，自己等待自己完成，一辈子完不成
-  console.log('循环引用，自己等待自己完成，一辈子完不成');
-  return p2;
-},reason=>{
-  console.error('reject2',reason);
+}).then((value) => {
+  console.warn('97.fulfilled', value);
+  // return 'return 1'
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve('promisexxx')
+    }, 100);
+  })
+}, (reason) => {
+  console.warn('97.rejected', reason);
+}).then(value => {
+  console.warn('98.fulfilled.1', value);
+  return 'return 2'
+}).then(value => {
+  console.warn('98.fulfilled.2', value);
+  return 'return 3'
+}).then(value => {
+  console.warn('98.fulfilled.3', value);
+  return 'return 4'
 })
+// let p = new _Promise(
+//   (resolve, reject) => {
+//     // resolve(0);
+//     setTimeout(() => {
+//       resolve(0)
+//     }, 500)
+//   },
+//   (reason) => {
+//     console.error('reject1', reason)
+//   }
+// )
+// var p2 = p.then(
+//   (data) => {
+//     // 循环引用，自己等待自己完成，一辈子完不成
+//     console.log('循环引用，自己等待自己完成，一辈子完不成')
+//     return p2
+//   },
+//   (reason) => {
+//     console.error('reject2', reason)
+//   }
+// )
