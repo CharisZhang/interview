@@ -24,8 +24,6 @@ function _Promise(fn) {
     this.finally = function (onDone) {
         this.then(onDone, onDone)
     }
-    fn(resolve, reject)
-
     function handle(callback) {
         if (state === 'pending') {
             callbacks.push(callback)
@@ -37,13 +35,13 @@ function _Promise(fn) {
             next(value)
             return
         }
+        let ret
         try {
-            const ret = cb(value)
-            next(ret)
+            ret = cb(value)
         } catch (e) {
             callback.reject(e)
         }
-
+        callback.resolve(ret)
         // if (state === 'fulfilled') {
         //     if (!cb.onFulfilled) {
         //         cb.resolve(value)// 没有设置onFulfilled 静默移如下一promise的resolve
@@ -94,6 +92,11 @@ function _Promise(fn) {
             const fulfilledFn = callbacks.shift()
             handle(fulfilledFn)
         }
+    }
+    try {
+        fn(resolve, reject)
+    } catch (e) {
+        reject(e)
     }
 }
 _Promise.resolve = function (value) {
