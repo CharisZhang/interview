@@ -1,260 +1,154 @@
 /**
  * 手写_promise
- * 哔哩哔哩: https://www.bilibili.com/video/BV1L441157jg?p=5
- * 掘金: https://juejin.cn/post/6844903625769091079#heading-1
+ * 哔哩哔哩: https://www.bilibili.com/video/BV137411e7KA?p=13
  */
-/* 1. 基本状态
-  Promise存在三个状态（state）pending、fulfilled、rejected
-  pending（等待态）为初始态，并可以转化为fulfilled（成功态）和rejected（失败态）
-  成功时，不可转为其他状态，且必须有一个不可改变的值（value）
-  失败时，不可转为其他状态，且必须有一个不可改变的原因（reason）
-  new Promise((resolve, reject)=>{resolve(value)}) resolve为成功，接收参数value，状态改变为fulfilled，不可再次改变。
-  new Promise((resolve, reject)=>{reject(reason)}) reject为失败，接收参数reason，状态改变为rejected，不可再次改变。
-  若是executor函数报错 直接执行reject();
+/**
+ * 1. 创建状态和值 state, value
+ *    因为state的状态固定(pending, fulfilled, rejected),设置为静态属性 static
+ *    value, 使用promise的时候, 把值改变,交给then去处理 then可以获取值
+ * 2. 创建promise的时候会传递一个函数(executor: 执行者) 含有两个方法resolve(解决)和reject(拒绝)
+ *    使用的时候executor传递两个参数 executor(resolve, reject) -> 可以将其写成类方法 Promise类的方法
+ *    类方法会有参数: resolve的值/reject的拒因
+ *    调用resolve/reject的时候需要改变状态和值
+ *    executor(this.resolve, this.reject) 遵循严格模式外部调用resolve this会指向外部的上下文,需要bind来改变this()
+ *    executor(this.resolve.bind(this),this.reject.bind(this))
+ * 3. 状态保护, 只有状态为PENDING的情况才可以修改
+ * 4. 执行过程中有错误会调用reject, trycatch executor
+ * 5. then 构建
+ *    传递两个函数参数(onFulfilled, onRejected )
+ *    then不会立即执行,只有状态改变之后才会执行
+ *    then 内的参数是可以不传的, 需要做额外的处理, 比如return Promise
+ * 6. then 异步操作异常捕获
+ *    then的函数参数执行报错也需要 将错误放入onRejected执行
+ *    promise是异步操作的, 需要将then的操作放到任务队列中比如settimeout(宏任务模拟微任务) 否则会从上到下执行
+ * 7. promise的pending状态处理
+ *    在状态改变是异步的时候 需要另外处理(在pending状态处理)
+ *    创建未来要执行的函数的数组 callbacks, 状态改变后再拿出执行
+ *    异步执行之后会执行resolve/reject的方法 将callbacks遍历执行放入resolve/reject的方法内
+ * 8. 在异步执行之后仍然需要做错误处理, push callbacks 做错误处理
+ * 9. priomise 永远是异步的, resolve/reject 后面有同步执行的代码,先执行, 再去执行then的方法
+ *    callbacks 遍历执行 套上settimeout
+ * A. then的链式调用
+ *    then返回一个new promise
+ *    将then执行的返回值传递到下一promise的resolve方法
+ * B. then新增promise异常处理
+ *    新Promise发生异常的时候会调用 新promise的异常处理 onRejected(error)-> reject(error)
+ * C. then的穿透处理
+ *    在then的参数不是function的时候 直接返回value 实现穿透
  */
-
-class _Promise {
+class MyPromise {
+  static PENDING = 'pending'
+  static FULFILLED = 'fulfilled'
+  static REJECTED = 'rejected'
   constructor(executor) {
-    console.log('1.promise.constructor')
-    this.state = 'pending' // 三种状态 pending, fulfilled, rejected
-    this.value = null // 成功的值
-    this.reason = null // 失败的原因
-    // 成功/失败回调函数存放的数组
-    this.onResolvedCallbacks = []
-    this.onRejectedCallbacks = []
-    let resolve = (value) => {
-      console.log('3.promise.constructor.resolve')
-      if (this.state === 'pending') {
-        this.state = 'fulfilled'
-        this.value = value
-        this.onResolvedCallbacks.forEach((fn) => fn())
-      }
-    }
-    let reject = (reason) => {
-      // console.log('3.promise.constructor.reject',reason);
-      if (this.state === 'pending') {
-        this.state = 'reject'
-        this.reason = reason
-        console.error('opts')
-        this.onRejectedCallbacks.forEach((fn) => fn())
-      }
-    }
+    this.state = MyPromise.PENDING
+    this.value = null
+    this.callbacks = []
+    // 执行过程中有错误会调用reject
     try {
-      executor(resolve, reject)
+      // class 遵循严格模式, 外部调用class的resolve,会指向全局
+      executor(this.resolve.bind(this), this.reject.bind(this))
     } catch (error) {
-      reject(error)
+      this.reject(error)
     }
   }
-  /* 2. then 方法
-    Promise有一个叫做then的方法，里面有两个参数：onFulfilled,onRejected,成功有成功的值，失败有失败的原因
-    当状态state为fulfilled，则执行onFulfilled，传入this.value。当状态state为rejected，则执行onRejected，传入this.reason
-    onFulfilled,onRejected如果他们是函数，则必须分别在fulfilled，rejected后被调用，value或reason依次作为他们的第一个参数
-  */
+  resolve(value) {
+    // 状态保护
+    if (this.state === MyPromise.PENDING) {
+      this.state = MyPromise.FULFILLED
+      this.value = value
+      setTimeout(() => {
+        this.callbacks.forEach(callback => {
+          callback.onFulfilled(value)
+        })
+      });
+    }
+  }
+  reject(reason) {
+    if (this.state === MyPromise.PENDING) {
+      this.state = MyPromise.REJECTED
+      this.value = reason
+      setTimeout(() => {
+        this.callbacks.forEach(callback => {
+          callback.onRejected(reason)
+        })
+      });
+    }
+  }
   then(onFulfilled, onRejected) {
-    console.log('4.promise.then');
-    // onFulfilled如果不是函数，就忽略onFulfilled，直接返回value
-    onFulfilled = typeof onFulfilled === 'function' ?
-      onFulfilled :
-      value => value
-    // onRejected如果不是函数，就忽略onRejected，直接扔出错误
-    onRejected = typeof onFulfilled === 'function' ?
-      onRejected :
-      err => {
-        throw err
+    return new MyPromise((resolve,reject)=>{
+      if (typeof onFulfilled !== 'function') {
+        onFulfilled = () => this.value
       }
-    /* 4. new Promise().then().then() 链式调用
-      then里面返回一个新的promise
-      将这个promise2返回的值传递到下一个then中
-      如果返回一个普通的值，则将普通的值传递给下一个then中
-      规定onFulfilled()或onRejected()的值，即第一个then返回的值，叫做x，判断x的函数叫做resolvePromise
-      首先，要看x是不是promise。
-      如果是promise，则取它的结果，作为新的promise2成功的结果
-      如果是普通值，直接作为promise2成功的结果
-      所以要比较x和promise2
-      resolvePromise的参数有promise2（默认返回的promise）、x（我们自己return的对象）、resolve、reject
-      resolve和reject是promise2的
-    */
-    const promise2 = new _Promise((resolve, reject) => {
-      if (this.state === 'fulfilled') {
-        setTimeout(() => {
-          try {
-            let x = onFulfilled(this.value)
-            resolvePromise(promise2, x, resolve, reject)
-          } catch (e) {
-            reject(e)
-          }
-        }, 0);
+      if (typeof onRejected !== 'function') {
+        onRejected = () => this.value
       }
-      if (this.state === 'rejected') {
-        setTimeout(() => {
-          try {
-            let x = onRejected(this.reason)
-            resolvePromise(promise2, x, resolve, reject)
-          } catch (e) {
-            reject(e)
-          }
-        }, 0);
-      }
-      /* 3. 异步实现
-        但是当resolve在setTomeout内执行，then时state还是pending等待状态
-        我们就需要在then调用的时候，将成功和失败存到各自的数组，一旦reject或者resolve，就调用它们
-        类似于发布订阅，先将then里面的两个函数储存起来，由于一个promise可以有多个then，所以存在同一个数组内。
-      */
-      if (this.state === 'pending') {
-        this.onResolvedCallbacks.push(() => {
-          setTimeout(() => {
+      if (this.state === MyPromise.PENDING) {
+        this.callbacks.push({
+          onFulfilled: value => {
             try {
-              let x = onFulfilled(this.value)
-              resolvePromise(promise2, x, resolve, reject)
-            } catch (e) {
-              reject(e)
+              let result = onFulfilled(value)
+              resolve(result)
+            } catch (error) {
+              reject(error)
+              // onRejected(error)
             }
-          }, 0);
-        })
-        this.onRejectedCallbacks.push(() => {
-          setTimeout(() => {
-            try {
-              let x = onRejected(this.reason)
-              resolvePromise(promise2, x, resolve, reject)
-            } catch (e) {
-              reject(e)
-            }
-          }, 0);
-        })
-      }
-
-    })
-    return promise2
-  }
-  catch(fn) {
-    return this.then(null, fn)
-  }
-}
-/* 5. resolvePromise 让不同的promise代码互相套用
-  如果 x === promise2，则是会造成循环引用，自己等待自己完成，则报“循环引用”错误
-  x 不能是null
-  x 是普通值 直接resolve(x)
-  x 是对象或者函数（包括promise），let then = x.then
-  2、当x是对象或者函数（默认promise）
-  声明了then
-  如果取then报错，则走reject()
-  如果then是个函数，则用call执行then，第一个参数是this，后面是成功的回调和失败的回调
-  如果成功的回调还是pormise，就递归继续解析
-  3、成功和失败只能调用一个 所以设定一个called来防止多次调用
-*/
-function resolvePromise(promise2, x, resolve, reject) {
-  // 防止循环引用
-  if (x === promise2) {
-    console.error(new TypeError(`Chaining cycle detected for promise`))
-    return
-  }
-  // 防止多次调用
-  let called
-  if (x !== null && (typeof x === 'object' || typeof x === 'function')) {
-    try {
-      //  A+规定,声明then = x的then方法
-      let then = x.then
-      // 如果then是函数, 就默认是promise了
-      if (typeof then === 'function') {
-        then.call(
-          x,
-          (y) => {
-            // 成功和失败只能调用一个
-            if (called) return
-            called = true
-            // resolve的结果依旧是promise 那就继续解析
-            resolvePromise(promise2, y, resolve, reject)
           },
-          (err) => {
-            if (called) return
-            called = true
-            reject(err)
+          onRejected: reason => {
+            try {
+              let result = onRejected(reason)
+              resolve(result)
+            } catch (error) {
+              reject(error)
+              // onRejected(error)
+            }
+  
           }
-        )
+        })
       }
-    } catch (e) {
-      if (called) return
-      called = true
-      reject(e)
-    }
-  } else {
-    resolve(x)
+      if (this.state === MyPromise.FULFILLED) {
+        setTimeout(() => {
+          try {
+            let result = onFulfilled(this.value)
+            resolve(result)
+          } catch (error) {
+            reject(error)
+            // onRejected(error)
+          }
+        });
+      }
+      if (this.state === MyPromise.REJECTED) {
+        setTimeout(() => {
+          try {
+            let result = onRejected(this.value)
+            resolve(result)
+          } catch (error) {
+            reject(error)
+            // onRejected(error)
+          }
+        });
+      }
+    })
   }
 }
-_Promise.resolve = function(val) {
-  return new _Promise((resolve,reject)=>{
-    resolve(val)
-  })
-}
-_Promise.reject = function(val) {
-  return new _Promise((resolve,reject)=>{
-    reject(val)
-  })
-}
-_Promise.race = function(promises) {
-  return new _Promise((resolve,reject)=>{
-    for (let i = 0; i < promises.length; i++) {
-      promises[i].then(resolve,reject)
-    }
-  })
-}
-let _promise_1 = new _Promise((resolve,reject)=>{
+
+let p = new MyPromise((resolve, reject) => {
   setTimeout(() => {
-    reject('_promise_1')
-  }, 500);
-})
-let _promise_2 = new _Promise((resolve,reject)=>{
-  setTimeout(() => {
-    resolve('_promise_2')
+  // reject('错误')
+    resolve('解决')
+    // console.log(333);
   }, 1000);
+  // reject('错误')
+  // resolve('解决')
+}).then(value => {
+  console.log(value2);
+  return 'resolve2'
+},reason=>{
+  console.log('Error1: '+reason);
+  return 'reject2'
+}).then(value=>{
+  console.log(value);
+},reason=>{
+  console.log('Error2: '+reason);
 })
-let _promise_3 = new _Promise((resolve,reject)=>{
-  setTimeout(() => {
-    resolve('_promise_3')
-  }, 1500);
-})
-_Promise.race([_promise_1,_promise_2,_promise_3]).then((data)=>{
-  console.warn('resolve',data);
-}).catch((err)=>{
-  console.warn('reject',err);
-})
-// let _promise = new _Promise((resolve, reject) => {
-//   console.warn('2');
-//   setTimeout(() => {
-//     resolve('succeed')
-//   }, 500);
-// }).then((value) => {
-//   console.warn('97.fulfilled', value);
-//   // return 'return 1'
-//   return new Promise((resolve) => {
-//     setTimeout(() => {
-//       resolve('promisexxx')
-//     }, 100);
-//   })
-// }, (reason) => {
-//   console.warn('97.rejected', reason);
-// }).then(value => {
-//   console.warn('98.fulfilled.1', value);
-//   return 'return 2'
-// }).then(value => {
-//   console.warn('98.fulfilled.2', value);
-//   return 'return 3'
-// }).then(value => {
-//   console.warn('98.fulfilled.3', value);
-//   return 'return 4'
-// })
-// let p = new _Promise((resolve, reject) => {
-//   // resolve(0);
-//   setTimeout(() => {
-//     resolve(0);
-//   }, 500);
-// }, reason => {
-//   console.error('reject1', reason);
-// });
-// var p2 = p.then(data => {
-//   // 循环引用，自己等待自己完成，一辈子完不成
-//   console.log('循环引用，自己等待自己完成，一辈子完不成');
-//   return p2;
-// }, reason => {
-//   console.error('reject2', reason);
-// })
+console.log(2);
