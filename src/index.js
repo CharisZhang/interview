@@ -1,22 +1,10 @@
-function Company() {
-  var instance = {
-    name: 'a1',
-    getName() {
-      console.log(this.name);
-    },
-    getName1: () => {
-      console.log(this.name);
-    }
-  };
-  this.name = 'a2';
-  this.getName2 = function () {
-    console.log(this.name);
-  }
-  return instance;
+let str = ' 11 12323  123 '
+function trim(s) {
+  return s.replace(/^\s\s*/,'').replace(/\s\s*$/,'')
+  return s.replace(/^\s+|\s+$/g,'')
 }
-Company.prototype.name = 'a3';
-var company1 = new Company();
-console.log(company1);
-company1.getName();
-company1.getName1();
-company1.getName2();
+
+String.prototype.trim =function() {
+  return this.replace(/^\s+|\s+$/g,'')
+}
+console.log(str.trim());
