@@ -35,6 +35,10 @@
  *    新Promise发生异常的时候会调用 新promise的异常处理 onRejected(error)-> reject(error)
  * C. then的穿透处理
  *    在then的参数不是function的时候 直接返回value 实现穿透
+ * D. then 返回proimise 的处理
+ *    判断result 类型是否为Promise, 是: 执行result的then(resolve,reject) 否: 执行resolve(result)
+ * E. 代码冗余优化
+ *    
  */
 class MyPromise {
   static PENDING = 'pending'
@@ -88,7 +92,11 @@ class MyPromise {
           onFulfilled: value => {
             try {
               let result = onFulfilled(value)
-              resolve(result)
+              if (result instanceof MyPromise) {
+                result.then(resolve, reject)
+              }else{
+                resolve(result)
+              }
             } catch (error) {
               reject(error)
               // onRejected(error)
@@ -97,7 +105,11 @@ class MyPromise {
           onRejected: reason => {
             try {
               let result = onRejected(reason)
-              resolve(result)
+              if (result instanceof MyPromise) {
+                result.then(resolve, reject)
+              }else{
+                resolve(result)
+              }
             } catch (error) {
               reject(error)
               // onRejected(error)
@@ -110,7 +122,11 @@ class MyPromise {
         setTimeout(() => {
           try {
             let result = onFulfilled(this.value)
-            resolve(result)
+            if (result instanceof MyPromise) {
+              result.then(resolve, reject)
+            }else{
+              resolve(result)
+            }
           } catch (error) {
             reject(error)
             // onRejected(error)
@@ -120,8 +136,12 @@ class MyPromise {
       if (this.state === MyPromise.REJECTED) {
         setTimeout(() => {
           try {
-            let result = onRejected(this.value)
-            resolve(result)
+            let result = onRejected(this.value) 
+            if (result instanceof MyPromise) {
+              result.then(resolve, reject)
+            }else{
+              resolve(result)
+            }
           } catch (error) {
             reject(error)
             // onRejected(error)
@@ -134,20 +154,25 @@ class MyPromise {
 
 let p = new MyPromise((resolve, reject) => {
   setTimeout(() => {
-  // reject('错误')
-    resolve('解决')
+    reject('错误')
+    // resolve('解决')
     // console.log(333);
   }, 1000);
   // reject('错误')
   // resolve('解决')
 }).then(value => {
-  console.log(value2);
-  return 'resolve2'
+  console.log(value);
+  return new MyPromise((resolve,reject)=>{
+    reject('promise inner')
+  })
+  // return 'resolve2'
 },reason=>{
   console.log('Error1: '+reason);
-  return 'reject2'
+  return new MyPromise((resolve,reject)=>{
+    reject('promise inner')
+  })
 }).then(value=>{
-  console.log(value);
+  console.log('resolve2: '+value);
 },reason=>{
   console.log('Error2: '+reason);
 })
